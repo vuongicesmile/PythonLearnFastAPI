@@ -1,9 +1,8 @@
 from Enemy import *
 
 
-enemy = Enemy()
+zombie = Enemy()
 
-enemy.type_of_enemy = 'Zombie'
+zombie.type_of_enemy = 'Zombie'
 
-print(f'{enemy.type_of_enemy} has {enemy.health_points} health points'
-      f' and can do an attach ')
+print(zombie.attach())
