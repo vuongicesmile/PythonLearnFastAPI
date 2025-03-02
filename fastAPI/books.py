@@ -18,3 +18,8 @@ BOOKS = [
 @app.get("/")
 async  def first_api():
     return {"message": "Hello Vuong"}
+
+# truy cap /docs de mo swagger
+@app.get("/books")
+async def read_all_books():
+    return BOOKS
