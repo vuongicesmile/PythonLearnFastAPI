@@ -10,11 +10,15 @@ from starlette import status # using status
 import models
 from models import Todos
 from database import engine, SessionLocal
+# use router
+from routers import auth
 
 #1. Khởi tạo ứng dụng FastAPI:
 app = FastAPI()
 # 2. Tạo bảng trong cơ sở dữ liệu:
 models.Base.metadata.create_all(bind=engine)
+
+app.include_router(auth.router)
 
 def get_db():
     #Đây là một đối tượng session được tạo ra từ SQLAlchemy để kết nối với cơ sở dữ liệu.
