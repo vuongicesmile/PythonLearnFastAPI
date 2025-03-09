@@ -62,3 +62,25 @@ async def create_todo(db: db_dependency,
     # và thật sự transtition đến DB
         db.add(todo_model)
         db.commit()
+
+@app.put("/todo/{todo_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def update_todo(db: db_dependency,
+                    todo_request: TodoRequest,
+                    todo_id: int = Path(gt=0)): # phai de cuoi cung de verify
+    # add dictionary
+    todo_model = db.query(Todos).filter(Todos.id == todo_id).first()
+    if todo_model is None:
+        raise HTTPException(status_code=404, detail= 'Todo not found')
+
+# phải đúng thự tự của json để ko tạo obj mới
+    todo_model.description = todo_request.description
+    todo_model.complete = todo_request.complete
+    todo_model.title = todo_request.title
+    todo_model.priority = todo_request.priority
+
+
+    db.add(todo_model)
+    db.commit()
+    # the db need to know ahead of time what func is about to happen
+    # mean chuẩn bị sẵn csdl trong khi commit coomit xcxoas tất cả
+    # và thật sự transtition đến DB
