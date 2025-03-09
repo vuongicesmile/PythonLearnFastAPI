@@ -84,3 +84,14 @@ async def update_todo(db: db_dependency,
     # the db need to know ahead of time what func is about to happen
     # mean chuẩn bị sẵn csdl trong khi commit coomit xcxoas tất cả
     # và thật sự transtition đến DB
+
+@app.delete("/todo/{todo_id}", status_code=status.HTTP_204_NO_CONTENT)
+
+async def update_todo(db: db_dependency, todo_id: int = Path(gt=0)):
+    todo_model = db.query(Todos).filter(Todos.id == todo_id).first()
+
+    if todo_model is None:
+        raise HTTPException(status_code=404, detail= 'Todo not found')
+    db.query(Todos).filter(Todos.id == todo_id).delete()
+
+    db.commit()
