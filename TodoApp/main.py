@@ -1,6 +1,7 @@
 from typing import Annotated
 
 from fastapi.params import Depends, Path
+from pydantic import BaseModel, Field
 # SQLAlchemy để tương tác với cơ sở dữ liệu
 from sqlalchemy.orm import Session
 from fastapi import FastAPI, Depends, HTTPException
@@ -28,6 +29,13 @@ def get_db():
 
 db_dependency = Annotated[Session, Depends(get_db)]
 
+# validate request
+class TodoRequest(BaseModel):
+    title:str = Field(min_length=3)
+    description: str = Field(min_length=3, max_length=100)
+    priority: int = Field(gt=0, lt = 6)
+    complete: bool
+
 @app.get("/", status_code=status.HTTP_200_OK)
 #Đây là một hàm bất đồng bộ (asynchronous function). db là đối tượng Session (phiên làm việc) được lấy từ hàm get_db(). Depends(get_db) là cách FastAPI sử dụng để tự động tiêm đối tượng db vào hàm khi cần thiết.
 async def read_all(db:db_dependency):
@@ -42,3 +50,15 @@ async def read_todo(db: db_dependency, todo_id: int = Path
     if todo_model is not None:
         return  todo_model
     raise HTTPException(status_code=404, detail='Todo not found.')
+
+@app.post("/todo", status_code=status.HTTP_201_CREATED)
+async def create_todo(db: db_dependency,
+                          todo_request: TodoRequest):
+    # add dictionary
+        todo_model = Todos(**todo_request.dict())
+
+    # the db need to know ahead of time what func is about to happen
+    # mean chuẩn bị sẵn csdl trong khi commit coomit xcxoas tất cả
+    # và thật sự transtition đến DB
+        db.add(todo_model)
+        db.commit()
