@@ -1,5 +1,5 @@
 from datetime import timedelta, datetime, timezone
-from encodings.utf_7 import encode
+from http.client import HTTPException
 from typing import Annotated
 
 from pycparser.ply.yacc import token
@@ -9,10 +9,11 @@ from fastapi import  Depends, APIRouter
 from starlette import status
 from passlib.context import CryptContext
 from database import SessionLocal
-from fastapi.security import OAuth2PasswordRequestForm
+# decode JWT OAuth2PasswordBearer
+from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from models import Users
 # Đầu tiên cần pip install "python-jose[cryptography]"
-from jose import jwt
+from jose import jwt, JWTError
 
 
 router = APIRouter()
@@ -24,6 +25,8 @@ ALGORITHM = 'HS256'
 
 # use our hasing algorithm of Bcrypt
 bcrypt_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
+oauth2_bearer = OAuth2PasswordBearer(tokenUrl='token')
+
 
 class CreateUserRequest(BaseModel):
     username:str
@@ -55,6 +58,19 @@ def create_access_token(username: str, user_id: int, expires_delta: timedelta):
     return jwt.encode(encode, SECRET_KEY, algorithm=ALGORITHM)
 
 db_dependency = Annotated[Session, Depends(get_db)]
+
+async def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get('sub')
+        user_id: int = payload.get('id')
+        if username is None or user_id is None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                                detail='Could not validate user.')
+        return {'username': username, 'id': user_id }
+    except JWTError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail='Could not validate user.')
 
 
 def authenticate_user(username:str, password:str, db):
@@ -90,6 +106,6 @@ async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm,
         return 'Failed Authentication'
     token = create_access_token(user.username, user.id, timedelta(minutes=20))
 
-    return {'access_token': token}
+    return {'access_token': token, 'token_type': 'bearer'}
 
 
