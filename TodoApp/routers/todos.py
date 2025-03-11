@@ -40,9 +40,9 @@ class TodoRequest(BaseModel):
 
 @router.get("/", status_code=status.HTTP_200_OK)
 #Đây là một hàm bất đồng bộ (asynchronous function). db là đối tượng Session (phiên làm việc) được lấy từ hàm get_db(). Depends(get_db) là cách FastAPI sử dụng để tự động tiêm đối tượng db vào hàm khi cần thiết.
-async def read_all(db:db_dependency):
+async def read_all(user: user_dependency, db:db_dependency):
     # Dòng này thực hiện một truy vấn cơ sở dữ liệu để lấy tất cả các bản ghi từ bảng Todos. Kết quả trả về là một danh sách tất cả các công việc trong bảng Todos.
-    return db.query(Todos).all()
+    return db.query(Todos).filter(Todos.owner_id == user.get('id')).all()
 
 
 @router.get("/todo/{todo_id}", status_code=status.HTTP_200_OK)
