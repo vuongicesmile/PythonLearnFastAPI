@@ -7,9 +7,14 @@ from fastapi import  Depends, HTTPException, APIRouter
 from starlette import status # using status
 from models import Todos
 from database import SessionLocal
+from .auth import  get_current_user
+
 # use router
 #1. Khởi tạo ứng dụng FastAPI:
-router = APIRouter()
+router = APIRouter(
+    prefix='/auth',
+    tags=['auth']
+)
 
 
 def get_db():
@@ -24,6 +29,7 @@ def get_db():
         db.close()
 
 db_dependency = Annotated[Session, Depends(get_db)]
+user_dependency = Annotated[dict, Depends(get_current_user)]
 
 # validate request
 class TodoRequest(BaseModel):
@@ -48,16 +54,21 @@ async def read_todo(db: db_dependency, todo_id: int = Path
     raise HTTPException(status_code=404, detail='Todo not found.')
 
 @router.post("/todo", status_code=status.HTTP_201_CREATED)
-async def create_todo(db: db_dependency,
-                          todo_request: TodoRequest):
+async def create_todo(user: user_dependency, # thêm user dependancy
+                      db: db_dependency,
+                      todo_request: TodoRequest):
+    if user is None:
+        raise HTTPException(status_code=401, detail='Authentication Failed')
     # add dictionary
-        todo_model = Todos(**todo_request.dict())
+    # lấy thêm user_id
+    todo_model = Todos(**todo_request.dict(), owner_id=user.get('id'))
+
 
     # the db need to know ahead of time what func is about to happen
     # mean chuẩn bị sẵn csdl trong khi commit coomit xcxoas tất cả
     # và thật sự transtition đến DB
-        db.add(todo_model)
-        db.commit()
+    db.add(todo_model)
+    db.commit()
 
 @router.put("/todo/{todo_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def update_todo(db: db_dependency,
